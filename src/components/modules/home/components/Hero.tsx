@@ -6,11 +6,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Search, Package, Box, Weight, Calculator, Eye } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Package, Box, Weight, Calculator, Eye, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 // لیست بنادر و شهرها
 const ports = [
@@ -58,12 +59,14 @@ const backgroundImages = [
   "/images/ship-3.jpeg"];
 
 export function Hero() {
+  const [activeTab, setActiveTab] = useState<"quote" | "tracking">("quote");
   const [step, setStep] = useState(1);
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
   const [productType, setProductType] = useState("");
   const [containerType, setContainerType] = useState("");
   const [weight, setWeight] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [nextImageIndex, setNextImageIndex] = useState(1);
   const [isFadingOut, setIsFadingOut] = useState(false);
@@ -109,6 +112,21 @@ export function Hero() {
       weight,
     });
     window.location.href = `/quote?${params.toString()}`;
+  };
+
+  const handleTrack = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (trackingNumber.trim()) {
+      window.location.href = `/tracking?number=${trackingNumber.trim()}`;
+    }
+  };
+
+  const handleTabChange = (tab: "quote" | "tracking") => {
+    setActiveTab(tab);
+    // Reset step when switching tabs
+    if (tab === "quote") {
+      setStep(1);
+    }
   };
 
   const getPortLabel = (value: string) => {
@@ -209,11 +227,82 @@ export function Hero() {
 
           {/* Search Form */}
           <Card className="bg-white/95 backdrop-blur-sm shadow-xl p-6 md:p-8 border-0">
-            <div className="space-y-4">
-              {/* Step 1: Origin and Destination */}
-              {step === 1 && (
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-border">
+              <button
+                type="button"
+                onClick={() => handleTabChange("quote")}
+                className={cn(
+                  "flex-1 py-3 px-4 text-sm font-medium transition-all duration-200 relative",
+                  activeTab === "quote"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Calculator className="h-4 w-4 inline ml-1" />
+                محاسبه قیمت
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange("tracking")}
+                className={cn(
+                  "flex-1 py-3 px-4 text-sm font-medium transition-all duration-200 relative",
+                  activeTab === "tracking"
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Navigation className="h-4 w-4 inline ml-1" />
+                ردیابی محموله
+              </button>
+            </div>
+
+            <div className="space-y-4 min-h-[100px]">
+              {/* Tracking Tab */}
+              {activeTab === "tracking" && (
+                <form onSubmit={handleTrack} className="space-y-4 h-full flex flex-col">
+                  <div className="flex-1">
+                    
+                    <label htmlFor="trackingNumber" className="block text-sm font-medium text-foreground mb-2 justify-center">
+                      <p className="absolute left-[5%] text-xs text-muted-foreground mb-2 text-center">
+                       شماره ردیابی را از ایمیل یا پیامک خود دریافت کرده‌اید
+                      </p>
+                      <p>
+                        <Package className="h-4 w-4 inline ml-1 text-primary" />
+                        شماره ردیابی
+                      </p>
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="md:col-span-2">
+                        <Input
+                          id="trackingNumber"
+                          type="text"
+                          placeholder="شماره ردیابی (مثال: SH123456789)"
+                          value={trackingNumber}
+                          onChange={(e) => setTrackingNumber(e.target.value)}
+                          className="w-full bg-white text-foreground border-border hover:border-primary transition-colors"
+                        />
+                      </div>
+                    </div>
+                    <Button 
+                      type="submit" 
+                      size="lg" 
+                      className="w-full bg-primary hover:bg-primary-dark"
+                    >
+                      <Search className="h-5 w-5 ml-2" />
+                      ردیابی
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {/* Quote Tab */}
+              {activeTab === "quote" && (
+                <div className="h-full flex flex-col">
+                  {/* Step 1: Origin and Destination */}
+                  {step === 1 && (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label htmlFor="origin" className="block text-sm font-medium text-foreground mb-2">
                         <MapPin className="h-4 w-4 inline ml-1 text-primary" />
@@ -270,7 +359,7 @@ export function Hero() {
                       بازگشت
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label htmlFor="productType" className="block text-sm font-medium text-foreground mb-2">
                         <Package className="h-4 w-4 inline ml-1 text-primary" />
@@ -300,7 +389,7 @@ export function Hero() {
                       />
                     </div>
                   </div>
-                  <div>
+                  <div className="mb-4">
                     <label htmlFor="weight" className="block text-sm font-medium text-foreground mb-2">
                       <Weight className="h-4 w-4 inline ml-1 text-primary" />
                       وزن (کیلوگرم)
@@ -392,6 +481,8 @@ export function Hero() {
                     مشاهده جزئیات
                   </Button>
                 </>
+              )}
+                </div>
               )}
             </div>
           </Card>
