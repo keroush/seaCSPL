@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* CSS Variables برای استفاده در جاوااسکریپت یا جاهایی که نیاز به CSS variables داریم */
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+}
+
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid theme('colors.ring');
+  outline-offset: 2px;
+}
+
+/* Button and link transitions */
+button, a {
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: theme('colors.muted.DEFAULT');
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme('colors.muted.foreground');
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.foreground');
+}
+
