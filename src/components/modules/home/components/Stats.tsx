@@ -2,12 +2,92 @@
  * کامپوننت Stats برای نمایش آمار
  */
 
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import { Ship, Package, Globe, TrendingUp, Award, Users, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function Stats() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
+
+      const section = sectionRef.current;
+      const sectionTop = section.offsetTop;
+      const sectionHeight = section.offsetHeight;
+      const windowHeight = window.innerHeight;
+      const scrollY = window.scrollY;
+
+      // Calculate when section enters viewport
+      const sectionStart = sectionTop - windowHeight;
+      const sectionEnd = sectionTop + sectionHeight;
+
+      // Calculate scroll progress (0 to 1)
+      let progress = 0;
+      if (scrollY >= sectionStart && scrollY <= sectionEnd) {
+        progress = (scrollY - sectionStart) / (sectionEnd - sectionStart);
+        progress = Math.max(0, Math.min(1, progress)); // Clamp between 0 and 1
+      } else if (scrollY > sectionEnd) {
+        progress = 1; // Fully scrolled past
+      }
+
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
-    <section className="py-20 relative overflow-hidden">
+    <section ref={sectionRef} className="py-20 relative overflow-hidden">
       {/* Background Image */}
       <div 
         className="absolute inset-0 z-0"
@@ -17,6 +97,33 @@ export function Stats() {
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           opacity: 0.15,
+        }}
+      />
+      
+      {/* Animated Ship Image - Moves from circle (top left) to middle card based on scroll */}
+      <div
+        className={`absolute z-10 transition-opacity duration-500 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          width: '300px',
+          height: '300px',
+          opacity: 0.5,
+          // Interpolate position based on scroll progress
+          // Start: top 8%, left 3% (circle position)
+          // End: top 35%, left 50% (middle card position)
+          // For mobile: reduce left movement
+          top: isMobile ? `${13 + (scrollProgress * 6)}%` : `${13 + (scrollProgress * 27)}%`, // 8% to 35%
+          left: isMobile 
+            ? `${0 + (scrollProgress * 47)}%` // 3% to 23% for mobile (reduced movement)
+            : `${3 + (scrollProgress * 47)}%`, // 3% to 50% for desktop
+          backgroundImage: `url("/images/ship-png.png")`,
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.4))',
+          pointerEvents: 'none',
+          transition: 'top 0.1s linear, left 0.1s linear, transform 0.1s linear',
         }}
       />
       {/* Dark overlay for better readability */}
