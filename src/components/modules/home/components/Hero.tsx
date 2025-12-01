@@ -111,7 +111,7 @@ export function Hero() {
       containerType,
       weight,
     });
-    window.location.href = `/quote?${params.toString()}`;
+    window.location.href = `/quote?${params.toString()}&stops=test,test`;
   };
 
   const handleTrack = (e: React.FormEvent) => {
