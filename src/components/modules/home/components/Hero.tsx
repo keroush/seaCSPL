@@ -168,12 +168,12 @@ export function Hero() {
   }, [currentImageIndex]);
 
   return (
-    <section className="relative bg-gradient-to-br from-primary via-primary-dark to-secondary text-white py-16 md:py-22 overflow-hidden rounded-lg">
+    <section className="relative bg-black text-white py-16 md:py-22 overflow-hidden rounded-lg">
       {/* Background Images with Fade Effect */}
       <div className="absolute inset-0 flex items-center justify-center z-0">
         {/* Current Image - Fades out first */}
         <div 
-          className={`w-[99.5%] h-[98.5%] object-cover rounded-lg absolute transition-opacity duration-1000 ease-in-out ${
+          className={`w-[99%] h-[97.5%] object-cover rounded-lg absolute transition-opacity duration-1000 ease-in-out ${
             isFadingOut ? 'opacity-0' : 'opacity-100'
           }`}
           style={{

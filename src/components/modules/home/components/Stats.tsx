@@ -4,7 +4,8 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import Image from "next/image";
 import { Ship, Package, Globe, TrendingUp, Award, Users, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -12,7 +13,24 @@ export function Stats() {
   const [isVisible, setIsVisible] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isShipsCardHovered, setIsShipsCardHovered] = useState(false);
+  const [isPackagesCardHovered, setIsPackagesCardHovered] = useState(false);
+  const [isCountriesCardHovered, setIsCountriesCardHovered] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+
+  // Generate random distances for boxes (only once on mount)
+  const boxDistances = useMemo(() => {
+    const generateRandom = (min: number, max: number) => 
+      Math.floor(Math.random() * (max - min + 1)) + min;
+    
+    return [
+      { x: generateRandom(-70, -40), y: generateRandom(-60, -30), rotate: generateRandom(-20, -10) },
+      { x: generateRandom(40, 70), y: generateRandom(-60, -30), rotate: generateRandom(10, 20) },
+      { x: generateRandom(-70, -40), y: generateRandom(30, 60), rotate: generateRandom(10, 20) },
+      { x: generateRandom(40, 70), y: generateRandom(30, 60), rotate: generateRandom(-20, -10) },
+      { x: generateRandom(-30, 30), y: generateRandom(-70, -50), rotate: generateRandom(-15, 15) },
+    ];
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -102,13 +120,16 @@ export function Stats() {
       
       {/* Animated Ship Image - Moves from circle (top left) to middle card based on scroll */}
       <div
-        className={`absolute z-10 transition-opacity duration-500 ${
+        className={`absolute z-10 ${
           isVisible ? 'opacity-100' : 'opacity-0'
         }`}
         style={{
           width: '300px',
           height: '300px',
-          opacity: 0.5,
+          // Opacity decreases as scrollProgress increases (fade out when scrolling down)
+          // When scrollProgress = 0, opacity = 0.5 (visible)
+          // When scrollProgress = 1, opacity = 0 (invisible)
+          opacity: isVisible ? Math.max(0, 0.5 * (1.1 - scrollProgress * 1.6)) : 0,
           // Interpolate position based on scroll progress
           // Start: top 8%, left 3% (circle position)
           // End: top 35%, left 50% (middle card position)
@@ -123,7 +144,7 @@ export function Stats() {
           backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.4))',
           pointerEvents: 'none',
-          transition: 'top 0.1s linear, left 0.1s linear, transform 0.1s linear',
+          transition: 'top 0.1s linear, left 0.1s linear, opacity 0.3s ease-out',
         }}
       />
       {/* Dark overlay for better readability */}
@@ -206,8 +227,169 @@ export function Stats() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
           {/* Stat Card 1 */}
-          <Card className="group border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+          <Card 
+            className="group border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible"
+            onMouseEnter={() => setIsShipsCardHovered(true)}
+            onMouseLeave={() => setIsShipsCardHovered(false)}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            {/* Ship Background Image */}
+            <div className="absolute inset-0 z-0 opacity-5 rounded-md overflow-hidden">
+              <Image
+                src="/images/ship-3.jpeg"
+                alt="Ship background"
+                fill
+                className="object-cover brightness-[0.8]"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+            
+            {/* Animated Ships coming out of the card */}
+            {/* Ship 1 - Top Left */}
+            {/* <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '20%',
+                left: '10%',
+                width: '80px',
+                height: '80px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '0ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(-60px) translateY(-50px) scale(1)' 
+                  : 'translateX(0) translateY(0) scale(0.75)',
+              }}
+            /> */}
+            
+            {/* Ship 2 - Top Right */}
+            {/* <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '20%',
+                right: '10%',
+                width: '80px',
+                height: '80px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '100ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(60px) translateY(-50px) scale(1) scaleX(-1)' 
+                  : 'translateX(0) translateY(0) scale(0.75) scaleX(-1)',
+              }}
+            /> */}
+            
+            {/* Ship 3 - Bottom Left */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                bottom: '12%',
+                left: '20%',
+                width: '80px',
+                height: '80px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '200ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(-60px) translateY(50px) scale(1) scaleX(-1)' 
+                  : 'translateX(0) translateY(0) scale(0.75) scaleX(-1)',
+              }}
+            />
+            
+            {/* Ship 4 - Bottom Right */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                bottom: '9%',
+                right: '15%',
+                width: '80px',
+                height: '80px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '300ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(60px) translateY(50px) scale(1)' 
+                  : 'translateX(0) translateY(0) scale(0.75)',
+              }}
+            />
+            
+            {/* Ship 5 - Top Center */}
+            {/* <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '10%',
+                left: '50%',
+                width: '70px',
+                height: '70px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '150ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(-50%) translateY(-70px) scale(1)' 
+                  : 'translateX(-50%) translateY(0) scale(0.75)',
+              }}
+            /> */}
+            
+            {/* Ship 6 - Bottom Center */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isShipsCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                bottom: '0%',
+                left: '50%',
+                width: '70px',
+                height: '70px',
+                backgroundImage: `url("/images/ship-png.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
+                transitionDelay: '250ms',
+                transform: isShipsCardHovered 
+                  ? 'translateX(-50%) translateY(70px) scale(1) scaleX(-1)' 
+                  : 'translateX(-50%) translateY(0) scale(0.75) scaleX(-1)',
+              }}
+            />
+            
             <CardContent className="pt-6 pb-6 text-center relative z-10">
               <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Ship className="h-8 w-8 text-white" />
@@ -221,8 +403,143 @@ export function Stats() {
           </Card>
 
           {/* Stat Card 2 */}
-          <Card className="group border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+          <Card 
+            className="group border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible"
+            onMouseEnter={() => setIsPackagesCardHovered(true)}
+            onMouseLeave={() => setIsPackagesCardHovered(false)}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <div className="absolute inset-0 z-0 opacity-5 rounded-md overflow-hidden">
+              <Image
+                src="/images/port.png"
+                alt="port background"
+                fill
+                className="object-cover brightness-[0.8]"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+            {/* Animated Boxes coming out of the card */}
+            {/* Box 1 - Top Left */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isPackagesCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '15%',
+                left: '10%',
+                width: '60px',
+                height: '60px',
+                backgroundImage: `url("/images/small-container.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5))',
+                transitionDelay: '0ms',
+                transform: isPackagesCardHovered 
+                  ? `translateX(${boxDistances[0].x}px) translateY(${boxDistances[0].y}px) scale(1) rotate(${boxDistances[0].rotate}deg)` 
+                  : 'translateX(0) translateY(0) scale(0) rotate(0deg)',
+              }}
+            />
+            
+            {/* Box 2 - Top Right */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isPackagesCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '15%',
+                right: '10%',
+                width: '60px',
+                height: '60px',
+                backgroundImage: `url("/images/box.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5))',
+                transitionDelay: '100ms',
+                transform: isPackagesCardHovered 
+                  ? `translateX(${boxDistances[1].x}px) translateY(${boxDistances[1].y}px) scale(1) rotate(${boxDistances[1].rotate}deg)` 
+                  : 'translateX(0) translateY(0) scale(0.75) rotate(0deg)',
+              }}
+            />
+            
+            {/* Box 3 - Bottom Left */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isPackagesCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                bottom: '12%',
+                left: '15%',
+                width: '60px',
+                height: '60px',
+                backgroundImage: `url("/images/box.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5))',
+                transitionDelay: '200ms',
+                transform: isPackagesCardHovered 
+                  ? `translateX(${boxDistances[2].x}px) translateY(${boxDistances[2].y}px) scale(1) rotate(${boxDistances[2].rotate}deg)` 
+                  : 'translateX(0) translateY(0) scale(0.75) rotate(0deg)',
+              }}
+            />
+            
+            {/* Box 4 - Bottom Right */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isPackagesCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                bottom: '12%',
+                right: '15%',
+                width: '80px',
+                height: '80px',
+                backgroundImage: `url("/images/blue-container.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5))',
+                transitionDelay: '300ms',
+                transform: isPackagesCardHovered 
+                  ? `translateX(${boxDistances[3].x}px) translateY(${boxDistances[3].y}px) scale(1) rotate(10deg)` 
+                  : 'translateX(0) translateY(0) scale(0.75) rotate(0deg)',
+              }}
+            />
+            
+            {/* Box 5 - Top Center */}
+            <div
+              className={`absolute z-20 pointer-events-none transition-all duration-700 ease-in ${
+                isPackagesCardHovered 
+                  ? 'opacity-100' 
+                  : 'opacity-0'
+              }`}
+              style={{
+                top: '5%',
+                left: '50%',
+                width: '55px',
+                height: '55px',
+                backgroundImage: `url("/images/box.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 4px 12px rgba(139, 92, 246, 0.5))',
+                transitionDelay: '150ms',
+                transform: isPackagesCardHovered 
+                  ? `translateX(calc(-50% + ${boxDistances[4].x}px)) translateY(${boxDistances[4].y}px) scale(1) rotate(${boxDistances[4].rotate}deg)` 
+                  : 'translateX(-50%) translateY(0) scale(0.75) rotate(0deg)',
+              }}
+            />
+            
             <CardContent className="pt-6 pb-6 text-center relative z-10">
               <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-secondary to-secondary-dark flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Package className="h-8 w-8 text-white" />
@@ -236,8 +553,92 @@ export function Stats() {
           </Card>
 
           {/* Stat Card 3 */}
-          <Card className="group border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-primary/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-hidden">
+          <Card 
+            className="group border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-primary/5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 relative overflow-visible"
+            // onMouseEnter={() => setIsCountriesCardHovered(true)}
+            // onMouseLeave={() => setIsCountriesCardHovered(false)}
+          >
             <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <div className="absolute inset-0 z-0 opacity-5 rounded-md overflow-hidden">
+              <Image
+                src="/images/world.jpg"
+                alt="world background"
+                fill
+                className="object-cover brightness-[0.8]"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+
+            {/* Animated Continents coming out of the card - ANIMATIONS COMMENTED OUT */}
+            {/* Continent 1 - Top Left (Asia) */}
+            <div
+              className="absolute z-20 pointer-events-none opacity-100"
+              style={{
+                top: '15%',
+                left: '10%',
+                width: '100px',
+                height: '100px',
+                backgroundImage: `url("/images/continnents/asia.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 8px rgba(251, 146, 60, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))',
+                transform: 'translateX(-60px) translateY(-50px) scale(1) rotate(-10deg)',
+              }}
+            />
+            
+            {/* Continent 2 - Top Right (Europe) */}
+            <div
+              className="absolute z-20 pointer-events-none opacity-100"
+              style={{
+                top: '15%',
+                right: '10%',
+                width: '70px',
+                height: '70px',
+                backgroundImage: `url("/images/continnents/europe.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 8px rgba(251, 146, 60, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))',
+                transform: 'translateX(60px) translateY(-50px) scale(1) rotate(10deg)',
+              }}
+            />
+            
+            {/* Continent 3 - Bottom Left (America) */}
+            <div
+              className="absolute z-20 pointer-events-none opacity-100"
+              style={{
+                bottom: '12%',
+                left: '15%',
+                width: '100px',
+                height: '100px',
+                backgroundImage: `url("/images/continnents/america.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 8px rgba(251, 146, 60, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))',
+                transform: 'translateX(-60px) translateY(50px) scale(1) rotate(10deg)',
+              }}
+            />
+            
+            {/* Continent 4 - Bottom Right (Africa) */}
+            <div
+              className="absolute z-20 pointer-events-none opacity-100"
+              style={{
+                bottom: '12%',
+                right: '15%',
+                width: '70px',
+                height: '70px',
+                backgroundImage: `url("/images/continnents/africa.png")`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                filter: 'drop-shadow(0 8px 16px rgba(0, 0, 0, 0.3)) drop-shadow(0 4px 8px rgba(251, 146, 60, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))',
+                transform: 'translateX(60px) translateY(50px) scale(1) rotate(-10deg)',
+              }}
+            />
+            
             <CardContent className="pt-6 pb-6 text-center relative z-10">
               <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-accent to-accent-dark flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <Globe className="h-8 w-8 text-white" />
