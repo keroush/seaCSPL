@@ -264,7 +264,7 @@ export function Hero() {
                   <div className="flex-1">
                     
                     <label htmlFor="trackingNumber" className="block text-sm font-medium text-foreground mb-2 justify-center">
-                      <p className="absolute left-[5%] text-xs text-muted-foreground mb-2 text-center">
+                      <p className="absolute left-[5%] -mt-1 text-xs text-muted-foreground text-center max-w-[50%]">
                        شماره ردیابی را از ایمیل یا پیامک خود دریافت کرده‌اید
                       </p>
                       <p>

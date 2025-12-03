@@ -279,23 +279,24 @@ function QuoteContent() {
             </CardHeader>
             <CardContent className="pt-3">
               <div className="w-full mt-3 bg-white rounded-lg p-4 flex justify-around items-end">
-                <div className="w-full flex flex-row items-center justify-around gap-[2%]">
+                <div className="w-[70%] flex flex-row items-center justify-around gap-[2%]">
                   <div className="flex flex-col items-center">
                   <svg fill="#000000" width="20px" height="20px" viewBox="0 0 24 24" data-name="Layer 1" id="Layer_1" xmlns="http://www.w3.org/2000/svg">
                     <title/>
                     <path d="M6,13.3l1.21.54A7.22,7.22,0,0,0,12.8,14a5.17,5.17,0,0,1,4.23.18l3,1.48V5.38l-2.08-1a7.18,7.18,0,0,0-5.87-.24A5.2,5.2,0,0,1,8,4L6,3.11V2H4V22H6Z"/>
                 </svg>
-                <div className="justify-center items-center sm:flex flex-col gap-1 mt-1 md:flex-row">
-                    <div className="text-xs text-muted-foreground mt-1">مبدا</div>
-                    <div className="text-sm font-semibold text-foreground">{routePorts[0]}</div>
+                <div className="sm:flex flex-col justify-center items-center gap-1 mt-1 md:flex-row">
+                    <div className="flex text-xs text-muted-foreground mt-1 justify-center items-center">مبدا</div>
+                    <div className="flex text-sm font-semibold text-foreground justify-center items-center">{routePorts[0]}</div>
                   </div>
                   </div>
-                  <Image alt="arrow" src={"/images/arrow.png"} className="w-8 h-5" width={5} height={5}/>
+                  {/* <Image alt="arrow" src={"/images/arrow.png"} className="w-8 h-5" width={5} height={5}/> */}
                 </div>
                 {routePorts.slice(1,routePorts.length-1).map((name, idx) => {
                   // const x = (idx / denom) * 100;
                   return (
-                    <div key={idx} className="w-full h-full mr-4 flex flex-row justify-around items-center gap-[1%]">
+                    <div key={idx} className={`${idx == 0 ? "w-[165%] gap-[5%]" : "w-full gap-[1%]"} h-full flex flex-row justify-around items-center`}>
+                      {idx == 0 && <Image alt="arrow" src={"/images/arrow.png"} className="w-8 h-5" width={5} height={5}/>}
                       <div className="flex flex-col items-center justify-center">
                       <svg width="20px" height="20px" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
                           <path fill="#000000" d="M17 17v104.2l86 23.7V17zm0 122.8c-1.4 99.4 1.35 296.5 1 296.7.12 0 .23-.1.35-.2C31.89 428 48.05 419 64 419c15.97 0 27.59 10 37.6 18 10 8 18.5 14 26.4 14 3 0 6.1-.9 9.3-2.4l90.9-250.5zm86 68.2h18v18l23 5.2-4 17.6-19-4.3v58.9c1.2-1.4 2.3-2.7 3.4-4.2 5.6-7.5 9.6-15.3 9.6-15.3l16 8.2s-4.5 8.9-11.2 17.9c-3.3 4.4-7.2 9-11.9 12.7-4.7 3.7-10.6 7-17.8 6.3-8.2-.9-14.33-5.9-19.04-11.5-4.7-5.5-8.35-12-11.36-18.3-6.02-12.7-9.37-24.8-9.37-24.8l17.34-4.8s3.08 10.9 8.28 21.8c2.38 5 5.25 9.9 8.05 13.5v-64.5l-24.98-5.6 3.96-17.6 21.02 4.7zm132.8 22l-8.6 23.7c10.2 17.5 23.3 29.8 38.1 37.8 18.8 10.1 40.1 13.2 61.7 13.5v-18c-19.8-.3-38-3.3-53.2-11.4-15.6-8.3-28.6-21.9-38-45.6zm84.2 17v18h25v46h30v-46h25v-18zm-55 82v46h46v-46zm64 0v46h110v-46h-46zm128 0v46h30v-46zm-227.4 5.3c-2 .1-3.9.5-5.5 1.3-3.1 1.5-5.6 3.9-7.9 6.6-4.5 5.6-8.3 13.3-10.9 22.6-2.6 9.2-3.7 18.2-3 26.4.3 4.1 1 8 2.6 11.8 1.7 3.8 4.6 7.9 9 10 4.3 2.1 8.5 1.6 11.7.1 3.2-1.4 5.6-3.9 7.9-6.6 4.6-5.6 8.3-13.3 11-22.6 2.6-9.2 3.6-18.2 3-26.4-.4-4-1-8-2.7-11.7-1.7-3.9-4.6-8-8.9-10.1-2.1-1.1-4.3-1.4-6.3-1.4zm.7 21.1c0 .6.2.7.2 1.3.4 4.7-.2 12-2.3 19.3-2.1 7.3-5.2 13.3-7.9 16.5-.3.5-.5.4-.8.8-.1-.6-.2-.7-.3-1.3-.4-4.7.3-12 2.4-19.3 2-7.3 5.2-13.3 7.8-16.5.4-.5.6-.4.9-.8zM265 393v46h110v-46zm128 0v46h94v-46zM64 437c-4.68 0-12.17 2.5-20.09 6.1-9.03 3.4-17.74 8.4-25.57 13.2-.12.1-.22.1-.34.2V478c2.94-2 6.22-4.1 9.77-6.3C40.26 464 56.1 457 64 457c7.9 0 16.34 6 26.37 14 10.03 8 21.63 18 37.63 18 16 0 27.6-10 37.6-18s18.5-14 26.4-14c7.9 0 23.8 7 36.2 14.7 8.3 5 15 9.9 18.8 12.7v-22c-2.8-2-6-4-9.3-6.1C224.1 448 208 439 192 439c-16 0-27.6 10-37.6 18s-18.5 14-26.4 14c-7.9 0-16.4-6-26.4-14-7.14-5.7-15.08-12.4-24.8-15.8-4.5-2.6-8.72-4.2-12.8-4.2zm201 20v30h46v-30zm64 0v30h110v-30zm128 0v30h30v-30z"/>
@@ -333,8 +334,8 @@ function QuoteContent() {
                   </g>
                 </svg>
                   <div className="sm:flex flex-col justify-cnter items-center gap-1 mt-1 md:flex-row">
-                    <div className="text-xs text-muted-foreground mt-1">مقصد</div>
-                    <div className="text-sm font-semibold text-foreground">{routePorts[routePorts.length-1]}</div>
+                    <div className="flex text-xs text-muted-foreground mt-1 justify-center items-center">مقصد</div>
+                    <div className="flex text-sm font-semibold text-foreground justify-center items-center">{routePorts[routePorts.length-1]}</div>
                   </div>
                 </div>
               </div>
