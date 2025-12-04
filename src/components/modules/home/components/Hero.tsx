@@ -527,8 +527,8 @@ export function Hero() {
                           <div className="text-xs text-muted-foreground mb-2">هزینه تقریبی</div>
                           {priceData && (
                             <>
-                              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">
-                                {priceData.total} <span className="text-xl md:text-2xl">ریال</span>
+                              <div className="text-3xl md:text-3xl font-bold text-primary mb-1">
+                                {priceData.total} <span className="text-xl md:text-xl">ریال</span>
                               </div>
                               <div className="text-sm text-muted-foreground mt-3 pt-3 border-t border-border/50">
                                 قیمت به ازای هر {priceData.unit}:{" "}

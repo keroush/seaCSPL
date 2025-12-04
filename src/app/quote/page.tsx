@@ -237,8 +237,8 @@ function QuoteContent() {
                 <Calculator className="h-6 w-6 text-white/90" />
                 <span className="text-sm text-white/80 font-medium">هزینه کل تقریبی</span>
               </div>
-              <div className="text-6xl font-bold mb-3 drop-shadow-lg">
-                {breakdown.total.toLocaleString("fa-IR")} <span className="text-4xl">ریال</span>
+              <div className="text-3xl font-bold mb-3 drop-shadow-lg">
+                {breakdown.total.toLocaleString("fa-IR")} <span className="text-2xl">ریال</span>
               </div>
               <p className="text-xs text-white/70 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
                 * قیمت تقریبی - ممکن است بر اساس شرایط واقعی تغییر کند
