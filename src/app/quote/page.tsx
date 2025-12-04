@@ -60,6 +60,110 @@ function QuoteContent() {
   const containerType = searchParams.get("containerType") || "";
   const weight = searchParams.get("weight") || "";
 
+  // تعیین واحد قیمت‌گذاری بر اساس نوع محصول
+  const getPriceUnit = () => {
+    // محصولاتی که بر اساس لیتر قیمت‌گذاری می‌شوند
+    const literBasedProducts = ["chemicals", "food"];
+    return literBasedProducts.includes(productType) ? "liter" : "kg";
+  };
+
+  // محاسبه فاصله و ضریب قیمت بر اساس مبدا و مقصد
+  const getDistanceMultiplier = () => {
+    const iranPorts = ["bandar-abbas", "bushehr", "chabahar", "imam-khomeini", "shahid-rajaee"];
+    const middleEastPorts = ["dubai"];
+    const asiaPorts = ["shanghai", "singapore"];
+    const europePorts = ["rotterdam", "hamburg"];
+    const americaPorts = ["los-angeles", "new-york"];
+
+    const isIranOrigin = iranPorts.includes(origin);
+    const isIranDestination = iranPorts.includes(destination);
+
+    if (!isIranOrigin && !isIranDestination) return 1.0; // Both foreign
+
+    if (middleEastPorts.includes(origin) || middleEastPorts.includes(destination)) {
+      return 0.7; // Short distance
+    } else if (asiaPorts.includes(origin) || asiaPorts.includes(destination)) {
+      return 1.0; // Medium distance
+    } else if (europePorts.includes(origin) || europePorts.includes(destination)) {
+      return 1.4; // Long distance
+    } else if (americaPorts.includes(origin) || americaPorts.includes(destination)) {
+      return 1.8; // Very long distance
+    }
+    return 1.0;
+  };
+
+  // ضریب قیمت بر اساس نوع محصول
+  const getProductMultiplier = () => {
+    const multipliers: Record<string, number> = {
+      general: 1.0,
+      electronics: 1.2, // Fragile, needs special handling
+      textiles: 0.9, // Lightweight
+      machinery: 1.3, // Heavy, special handling
+      food: 1.5, // Refrigerated, special requirements
+      chemicals: 1.8, // Hazardous, special handling
+      furniture: 1.1,
+      other: 1.0,
+    };
+    return multipliers[productType] || 1.0;
+  };
+
+  // محاسبه قیمت‌های تفکیک شده (واقع‌گرایانه)
+  const calculateBreakdown = () => {
+    // هزینه پایه کانتینر (به میلیون ریال)
+    const containerBasePrices: Record<string, number> = {
+      "20ft": 45000000, // ~$1000 USD
+      "40ft": 70000000, // ~$1550 USD
+      "40ft-hc": 85000000, // ~$1900 USD
+      "45ft": 100000000, // ~$2200 USD
+      "reefer": 150000000, // ~$3300 USD (much more expensive)
+      "open-top": 90000000,
+      "flat-rack": 95000000,
+    };
+
+    // هزینه حمل به ازای هر کیلوگرم (ریال)
+    const shippingCostPerKg = 12000; // Base shipping cost per kg
+    const shippingCostPerLiter = 7000; // Base shipping cost per liter (lighter)
+
+    const containerBasePrice = containerBasePrices[containerType] || 70000000;
+    const distanceMultiplier = getDistanceMultiplier();
+    const productMultiplier = getProductMultiplier();
+    
+    const unit = getPriceUnit();
+    const quantity = parseFloat(weight) || 1;
+    
+    // محاسبه هزینه حمل بر اساس وزن/حجم
+    const shippingCostPerUnit = unit === "liter" ? shippingCostPerLiter : shippingCostPerKg;
+    const shippingCost = Math.round(quantity * shippingCostPerUnit * distanceMultiplier * productMultiplier);
+    
+    // هزینه کانتینر با در نظر گیری فاصله و نوع محصول
+    const containerPrice = Math.round(containerBasePrice * distanceMultiplier * productMultiplier);
+    
+    // هزینه بارگیری (8-12% از کل)
+    const handlingCost = Math.round((containerPrice + shippingCost) * 0.1);
+    
+    // بیمه (2-5% از کل)
+    const insurancePrice = Math.round((containerPrice + shippingCost) * 0.03);
+    
+    // اسناد و مدارک (3-5% از کل)
+    const documentationPrice = Math.round((containerPrice + shippingCost) * 0.04);
+    
+    // محاسبه قیمت به ازای هر واحد
+    const shippingPricePerUnit = quantity > 0 ? Math.round(shippingCost / quantity) : 0;
+    const handlingPricePerUnit = quantity > 0 ? Math.round(handlingCost / quantity) : 0;
+
+    return {
+      container: containerPrice,
+      shipping: shippingCost,
+      shippingPerUnit: shippingPricePerUnit,
+      handling: handlingCost,
+      handlingPerUnit: handlingPricePerUnit,
+      insurance: insurancePrice,
+      documentation: documentationPrice,
+      total: containerPrice + shippingCost + handlingCost + insurancePrice + documentationPrice,
+      unit: unit === "liter" ? "لیتر" : "کیلوگرم",
+    };
+  };
+
   useEffect(() => {
     if (!origin || !destination || !productType || !containerType || !weight) {
       router.push("/");
@@ -67,45 +171,9 @@ function QuoteContent() {
     }
 
     // محاسبه قیمت تقریبی
-    let basePrice = 500;
-    if (containerType === "20ft") basePrice = 800;
-    else if (containerType === "40ft") basePrice = 1200;
-    else if (containerType === "40ft-hc") basePrice = 1400;
-    else if (containerType === "45ft") basePrice = 1600;
-    else if (containerType === "reefer") basePrice = 2000;
-
-    const weightFactor = parseFloat(weight) / 1000;
-    const finalPrice = Math.round(basePrice * weightFactor);
-    setEstimatedPrice(finalPrice.toLocaleString("fa-IR"));
+    const breakdown = calculateBreakdown();
+    setEstimatedPrice(breakdown.total.toLocaleString("fa-IR"));
   }, [origin, destination, productType, containerType, weight, router]);
-
-  // محاسبه قیمت‌های تفکیک شده
-  const calculateBreakdown = () => {
-    let containerBasePrice = 0;
-    if (containerType === "20ft") containerBasePrice = 800;
-    else if (containerType === "40ft") containerBasePrice = 1200;
-    else if (containerType === "40ft-hc") containerBasePrice = 1400;
-    else if (containerType === "45ft") containerBasePrice = 1600;
-    else if (containerType === "reefer") containerBasePrice = 2000;
-    else if (containerType === "open-top") containerBasePrice = 1500;
-    else if (containerType === "flat-rack") containerBasePrice = 1800;
-
-    const weightFactor = parseFloat(weight) / 1000;
-    const containerPrice = Math.round(containerBasePrice * weightFactor);
-    const shippingPrice = Math.round(containerPrice * 0.6); // 60% هزینه حمل
-    const handlingPrice = Math.round(containerPrice * 0.2); // 20% هزینه بارگیری
-    const insurancePrice = Math.round(containerPrice * 0.1); // 10% بیمه
-    const documentationPrice = Math.round(containerPrice * 0.1); // 10% اسناد
-
-    return {
-      container: containerPrice,
-      shipping: shippingPrice,
-      handling: handlingPrice,
-      insurance: insurancePrice,
-      documentation: documentationPrice,
-      total: containerPrice + shippingPrice + handlingPrice + insurancePrice + documentationPrice,
-    };
-  };
 
   const breakdown = calculateBreakdown();
 
@@ -179,25 +247,73 @@ function QuoteContent() {
           </CardContent>
         </Card>
 
-        {/* Price Breakdown - Modern Grid with Different Colors */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-lg transition-all">
-            <CardHeader className="pb-2 border-b border-primary/10">
-              <CardTitle className="text-sm flex items-center gap-2 text-primary">
-                <Box className="h-4 w-4" />
-                هزینه کانتینر
+        {/* Cargo Weight, Product Type, and Container Type - Top Section */}
+        <div className="mb-6">
+          {/* Cargo Weight - Full Width */}
+          <Card className="mb-4 border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-primary/5 shadow-md hover:shadow-lg transition-all">
+            <CardHeader className="pb-2 border-b border-accent/10">
+              <CardTitle className="text-sm flex items-center gap-2 text-accent">
+                <Weight className="h-4 w-4" />
+                وزن محموله
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-3">
-              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-3">
-                <div className="text-xl font-bold text-primary mb-1">
-                  {breakdown.container.toLocaleString("fa-IR")}
+              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4 text-center">
+                <div className="text-2xl font-bold text-accent mb-1">
+                  {parseFloat(weight).toLocaleString("fa-IR")}
                 </div>
-                <div className="text-xs text-muted-foreground">ریال</div>
+                <div className="text-xs text-muted-foreground">کیلوگرم</div>
               </div>
             </CardContent>
           </Card>
 
+          {/* Product Type and Container Type - Side by Side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="border-b border-primary/10">
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <Package className="h-5 w-5" />
+                  نوع محصول
+                </CardTitle>
+                <CardDescription className="font-medium text-foreground mt-2">{productInfo.label}</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {productInfo.description}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5 shadow-md hover:shadow-lg transition-all">
+              <CardHeader className="border-b border-secondary/10">
+                <CardTitle className="flex items-center gap-2 text-secondary">
+                  <Box className="h-5 w-5" />
+                  نوع کانتینر
+                </CardTitle>
+                <CardDescription className="font-medium text-foreground mt-2">{containerInfo.label}</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {containerInfo.description}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Price Breakdown - Modern Grid with Different Colors */}
+        {/* First Row: Shipping and Loading Costs (Wider) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <Card className="border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-md hover:shadow-lg transition-all">
             <CardHeader className="pb-2 border-b border-secondary/10">
               <CardTitle className="text-sm flex items-center gap-2 text-secondary">
@@ -210,7 +326,13 @@ function QuoteContent() {
                 <div className="text-xl font-bold text-secondary mb-1">
                   {breakdown.shipping.toLocaleString("fa-IR")}
                 </div>
-                <div className="text-xs text-muted-foreground">ریال</div>
+                <div className="text-xs text-muted-foreground mb-2">ریال</div>
+                <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                  به ازای هر {breakdown.unit}:{" "}
+                  <span className="font-semibold text-foreground">
+                    {breakdown.shippingPerUnit.toLocaleString("fa-IR")} ریال
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -226,6 +348,32 @@ function QuoteContent() {
               <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-3">
                 <div className="text-xl font-bold text-accent mb-1">
                   {breakdown.handling.toLocaleString("fa-IR")}
+                </div>
+                <div className="text-xs text-muted-foreground mb-2">ریال</div>
+                <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
+                  به ازای هر {breakdown.unit}:{" "}
+                  <span className="font-semibold text-foreground">
+                    {breakdown.handlingPerUnit.toLocaleString("fa-IR")} ریال
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Second Row: Container Cost, Insurance, and Documentation */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-lg transition-all">
+            <CardHeader className="pb-2 border-b border-primary/10">
+              <CardTitle className="text-sm flex items-center gap-2 text-primary">
+                <Box className="h-4 w-4" />
+                هزینه کانتینر
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-3">
+                <div className="text-xl font-bold text-primary mb-1">
+                  {breakdown.container.toLocaleString("fa-IR")}
                 </div>
                 <div className="text-xs text-muted-foreground">ریال</div>
               </div>
@@ -267,10 +415,10 @@ function QuoteContent() {
           </Card>
         </div>
 
-        {/* Route and Weight Info - Compact Design */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Card className="md:col-span-2 border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-md hover:shadow-lg transition-all">
-          <CardHeader className="border-b border-primary/10">
+        {/* Route Info - Compact Design */}
+        <div className="mb-6">
+          <Card className="border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-accent/5 shadow-md hover:shadow-lg transition-all">
+            <CardHeader className="border-b border-primary/10">
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Package className="h-5 w-5" />
                  مسیر حمل و نقل
@@ -337,66 +485,6 @@ function QuoteContent() {
                     <div className="flex text-xs text-muted-foreground mt-1 justify-center items-center">مقصد</div>
                     <div className="flex text-sm font-semibold text-foreground justify-center items-center">{routePorts[routePorts.length-1]}</div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-accent/20 bg-gradient-to-br from-accent/5 to-primary/5 shadow-md hover:shadow-lg transition-all">
-            <CardHeader className="pb-2 border-b border-accent/10">
-              <CardTitle className="text-sm flex items-center gap-2 text-accent">
-                <Weight className="h-4 w-4" />
-                وزن محموله
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-3">
-              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-accent mb-1">
-                  {parseFloat(weight).toLocaleString("fa-IR")}
-                </div>
-                <div className="text-xs text-muted-foreground">کیلوگرم</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Product and Container Details - Modern Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5 shadow-md hover:shadow-lg transition-all">
-            <CardHeader className="border-b border-primary/10">
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <Package className="h-5 w-5" />
-                نوع محصول
-              </CardTitle>
-              <CardDescription className="font-medium text-foreground mt-2">{productInfo.label}</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {productInfo.description}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-secondary/20 bg-gradient-to-br from-secondary/5 to-primary/5 shadow-md hover:shadow-lg transition-all">
-            <CardHeader className="border-b border-secondary/10">
-              <CardTitle className="flex items-center gap-2 text-secondary">
-                <Box className="h-5 w-5" />
-                نوع کانتینر
-              </CardTitle>
-              <CardDescription className="font-medium text-foreground mt-2">{containerInfo.label}</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="bg-white/50 hover:bg-white/70 transition-colors rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {containerInfo.description}
-                  </p>
                 </div>
               </div>
             </CardContent>

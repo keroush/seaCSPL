@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Search, Package, Box, Weight, Calculator, Eye, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ const containerTypes = [
 
 // لیست تصاویر پس‌زمینه
 const backgroundImages = [
-  "/images/ship-2.jpg",
+  // "/images/ship-2.jpg",
   "/images/sea-freight-shipping.png",
   "/images/ship-3.jpeg"];
 
@@ -72,20 +72,106 @@ export function Hero() {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isFadingIn, setIsFadingIn] = useState(false);
 
-  // محاسبه قیمت تقریبی (نمونه)
-  const calculateEstimatedPrice = () => {
-    let basePrice = 500; // قیمت پایه
-    if (containerType === "20ft") basePrice = 800;
-    else if (containerType === "40ft") basePrice = 1200;
-    else if (containerType === "40ft-hc") basePrice = 1400;
-    else if (containerType === "45ft") basePrice = 1600;
-    else if (containerType === "reefer") basePrice = 2000;
-    
-    const weightFactor = weight ? parseFloat(weight) / 1000 : 1;
-    const finalPrice = Math.round(basePrice * weightFactor);
-    
-    return finalPrice.toLocaleString("fa-IR");
+  // تعیین واحد قیمت‌گذاری بر اساس نوع محصول
+  const getPriceUnit = () => {
+    // محصولاتی که بر اساس لیتر قیمت‌گذاری می‌شوند
+    const literBasedProducts = ["chemicals", "food"];
+    return literBasedProducts.includes(productType) ? "liter" : "kg";
   };
+
+  // محاسبه فاصله و ضریب قیمت بر اساس مبدا و مقصد
+  const getDistanceMultiplier = () => {
+    const iranPorts = ["bandar-abbas", "bushehr", "chabahar", "imam-khomeini", "shahid-rajaee"];
+    const middleEastPorts = ["dubai"];
+    const asiaPorts = ["shanghai", "singapore"];
+    const europePorts = ["rotterdam", "hamburg"];
+    const americaPorts = ["los-angeles", "new-york"];
+
+    const isIranOrigin = iranPorts.includes(origin);
+    const isIranDestination = iranPorts.includes(destination);
+
+    if (!isIranOrigin && !isIranDestination) return 1.0; // Both foreign
+
+    if (middleEastPorts.includes(origin) || middleEastPorts.includes(destination)) {
+      return 0.7; // Short distance
+    } else if (asiaPorts.includes(origin) || asiaPorts.includes(destination)) {
+      return 1.0; // Medium distance
+    } else if (europePorts.includes(origin) || europePorts.includes(destination)) {
+      return 1.4; // Long distance
+    } else if (americaPorts.includes(origin) || americaPorts.includes(destination)) {
+      return 1.8; // Very long distance
+    }
+    return 1.0;
+  };
+
+  // ضریب قیمت بر اساس نوع محصول
+  const getProductMultiplier = () => {
+    const multipliers: Record<string, number> = {
+      general: 1.0,
+      electronics: 1.2, // Fragile, needs special handling
+      textiles: 0.9, // Lightweight
+      machinery: 1.3, // Heavy, special handling
+      food: 1.5, // Refrigerated, special requirements
+      chemicals: 1.8, // Hazardous, special handling
+      furniture: 1.1,
+      other: 1.0,
+    };
+    return multipliers[productType] || 1.0;
+  };
+
+  // محاسبه قیمت تقریبی (واقع‌گرایانه) - با useMemo برای بهینه‌سازی
+  const priceData = useMemo(() => {
+    if (step !== 3 || !productType || !containerType || !weight || !origin || !destination) {
+      return null;
+    }
+
+    // هزینه پایه کانتینر (به میلیون ریال)
+    const containerBasePrices: Record<string, number> = {
+      "20ft": 45000000, // ~$1000 USD
+      "40ft": 70000000, // ~$1550 USD
+      "40ft-hc": 85000000, // ~$1900 USD
+      "45ft": 100000000, // ~$2200 USD
+      "reefer": 150000000, // ~$3300 USD (much more expensive)
+      "open-top": 90000000,
+      "flat-rack": 95000000,
+    };
+
+    // هزینه حمل به ازای هر کیلوگرم (ریال)
+    const shippingCostPerKg = 12000; // Base shipping cost per kg
+    const shippingCostPerLiter = 7000; // Base shipping cost per liter (lighter)
+
+    const containerBasePrice = containerBasePrices[containerType] || 70000000;
+    const distanceMultiplier = getDistanceMultiplier();
+    const productMultiplier = getProductMultiplier();
+    
+    const unit = getPriceUnit();
+    const quantity = parseFloat(weight) || 1;
+    
+    // محاسبه هزینه حمل بر اساس وزن/حجم
+    const shippingCostPerUnit = unit === "liter" ? shippingCostPerLiter : shippingCostPerKg;
+    const shippingCost = Math.round(quantity * shippingCostPerUnit * distanceMultiplier * productMultiplier);
+    
+    // هزینه کانتینر با در نظر گیری فاصله و نوع محصول
+    const containerCost = Math.round(containerBasePrice * distanceMultiplier * productMultiplier);
+    
+    // هزینه بارگیری (8-12% از کل)
+    const handlingCost = Math.round((containerCost + shippingCost) * 0.1);
+    
+    // بیمه (2-5% از کل)
+    const insuranceCost = Math.round((containerCost + shippingCost) * 0.03);
+    
+    // اسناد و مدارک (3-5% از کل)
+    const documentationCost = Math.round((containerCost + shippingCost) * 0.04);
+    
+    const finalPrice = containerCost + shippingCost + handlingCost + insuranceCost + documentationCost;
+    const pricePerUnit = quantity > 0 ? Math.round(finalPrice / quantity) : 0;
+    
+    return {
+      total: finalPrice.toLocaleString("fa-IR"),
+      perUnit: pricePerUnit.toLocaleString("fa-IR"),
+      unit: unit === "liter" ? "لیتر" : "کیلوگرم"
+    };
+  }, [step, productType, containerType, weight, origin, destination]);
 
   const handleNext = () => {
     if (step === 1 && origin && destination) {
@@ -262,10 +348,9 @@ export function Hero() {
               {activeTab === "tracking" && (
                 <form onSubmit={handleTrack} className="space-y-4 h-full flex flex-col">
                   <div className="flex-1">
-                    
-                    <label htmlFor="trackingNumber" className="block text-sm font-medium text-foreground mb-2 justify-center">
-                      <p className="absolute left-[5%] -mt-1 text-xs text-muted-foreground text-center max-w-[50%]">
-                       شماره ردیابی را از ایمیل یا پیامک خود دریافت کرده‌اید
+                    <label htmlFor="trackingNumber" className="block text-sm font-medium text-foreground mb-2 relative">
+                      <p className="hidden md:block absolute -left-[30%] top-0 text-xs text-muted-foreground text-center w-full xl:-left-[35%]">
+                        شماره ردیابی را از ایمیل یا پیامک خود دریافت کرده‌اید
                       </p>
                       <p>
                         <Package className="h-4 w-4 inline ml-1 text-primary" />
@@ -282,6 +367,9 @@ export function Hero() {
                           onChange={(e) => setTrackingNumber(e.target.value)}
                           className="w-full bg-white text-foreground border-border hover:border-primary transition-colors"
                         />
+                        <p className="md:hidden mt-2 text-xs text-muted-foreground text-center">
+                          شماره ردیابی را از ایمیل یا پیامک خود دریافت کرده‌اید
+                        </p>
                       </div>
                     </div>
                     <Button 
@@ -437,9 +525,19 @@ export function Hero() {
                       <CardContent className="pt-6">
                         <div className="text-center">
                           <div className="text-xs text-muted-foreground mb-2">هزینه تقریبی</div>
-                          <div className="text-3xl md:text-4xl font-bold text-primary mb-1">
-                            {calculateEstimatedPrice()} <span className="text-xl md:text-2xl">ریال</span>
-                          </div>
+                          {priceData && (
+                            <>
+                              <div className="text-3xl md:text-4xl font-bold text-primary mb-1">
+                                {priceData.total} <span className="text-xl md:text-2xl">ریال</span>
+                              </div>
+                              <div className="text-sm text-muted-foreground mt-3 pt-3 border-t border-border/50">
+                                قیمت به ازای هر {priceData.unit}:{" "}
+                                <span className="font-semibold text-foreground">
+                                  {priceData.perUnit} ریال
+                                </span>
+                              </div>
+                            </>
+                          )}
                           <div className="text-xs text-muted-foreground mt-2">
                             * این قیمت تقریبی است
                           </div>

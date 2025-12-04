@@ -18,17 +18,14 @@ export function Stats() {
   const [isCountriesCardHovered, setIsCountriesCardHovered] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  // Generate random distances for boxes (only once on mount)
+  // Fixed distances for boxes (reduced travel distance)
   const boxDistances = useMemo(() => {
-    const generateRandom = (min: number, max: number) => 
-      Math.floor(Math.random() * (max - min + 1)) + min;
-    
     return [
-      { x: generateRandom(-70, -40), y: generateRandom(-60, -30), rotate: generateRandom(-20, -10) },
-      { x: generateRandom(40, 70), y: generateRandom(-60, -30), rotate: generateRandom(10, 20) },
-      { x: generateRandom(-70, -40), y: generateRandom(30, 60), rotate: generateRandom(10, 20) },
-      { x: generateRandom(40, 70), y: generateRandom(30, 60), rotate: generateRandom(-20, -10) },
-      { x: generateRandom(-30, 30), y: generateRandom(-70, -50), rotate: generateRandom(-15, 15) },
+      { x: -25, y: -20, rotate: -8 },
+      { x: 25, y: -20, rotate: 8 },
+      { x: -25, y: 20, rotate: 8 },
+      { x: 25, y: 20, rotate: -8 },
+      { x: 0, y: -25, rotate: 5 },
     ];
   }, []);
 
@@ -129,7 +126,7 @@ export function Stats() {
           // Opacity decreases as scrollProgress increases (fade out when scrolling down)
           // When scrollProgress = 0, opacity = 0.5 (visible)
           // When scrollProgress = 1, opacity = 0 (invisible)
-          opacity: isVisible ? Math.max(0, 0.5 * (1.1 - scrollProgress * 1.6)) : 0,
+          opacity: isMobile ? isVisible ? Math.max(0, 0.5 * (1 - scrollProgress * 2.5)) : 0 : isVisible ? Math.max(0, 0.5 * (1.1 - scrollProgress * 1.6)) : 0,
           // Interpolate position based on scroll progress
           // Start: top 8%, left 3% (circle position)
           // End: top 35%, left 50% (middle card position)
@@ -302,7 +299,7 @@ export function Stats() {
                   : 'opacity-0'
               }`}
               style={{
-                bottom: '12%',
+                bottom: '27%',
                 left: '20%',
                 width: '80px',
                 height: '80px',
@@ -313,8 +310,8 @@ export function Stats() {
                 filter: 'drop-shadow(0 4px 12px rgba(0, 102, 204, 0.5))',
                 transitionDelay: '200ms',
                 transform: isShipsCardHovered 
-                  ? 'translateX(-60px) translateY(50px) scale(1) scaleX(-1)' 
-                  : 'translateX(0) translateY(0) scale(0.75) scaleX(-1)',
+                  ? 'translateX(-60px) translateY(50px) scale(1) scaleX(-1) rotate(1deg)' 
+                  : 'translateX(0) translateY(0) scale(0.75) rotate(1deg) scaleX(-1)',
               }}
             />
             
@@ -374,7 +371,7 @@ export function Stats() {
                   : 'opacity-0'
               }`}
               style={{
-                bottom: '0%',
+                bottom: '10%',
                 left: '50%',
                 width: '70px',
                 height: '70px',
